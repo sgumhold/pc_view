@@ -22,7 +22,7 @@
 #define FILE_SAVE_TITLE "Save Point Cloud"
 #define FILE_OPEN_TITLE "Open Point Cloud"
 #define FILE_APPEND_TITLE "Append Point Cloud"
-#define FILE_OPEN_FILTER "Point Clouds (apc,bpc):*.apc;*.bpc|Mesh Files (obj,ply,pct):*.obj;*.ply;*.pct|All Files:*.*"
+#define FILE_OPEN_FILTER "Point Clouds (apc,bpc,pct):*.apc;*.bpc;*.pct|Mesh Files (obj,ply):*.obj;*.ply|All Files:*.*"
 
 enum FileBase
 {
@@ -876,9 +876,11 @@ void point_cloud_viewer::create_gui()
 	add_decorator("Point Cloud Viewer", "heading", "level=2");
 	add_member_control(this, "color_mode_overwrite", color_mode_overwrite, "dropdown", "enums='none,point selection,component selection'");
 	if (begin_tree_node("IO", file_name, true, "level=3")) {
+		align("\a");
 		add_control("file_base", file_base, "dropdown", "enums='normal_estimation,lego,hahn'");
 		add_gui("file_name", file_name, "file_name", "title='" FILE_OPEN_TITLE "';filter='" FILE_OPEN_FILTER "'");
 		add_member_control(this, "do_append", do_append, "toggle");
+		align("\b");
 		end_tree_node(file_name);
 	}
 

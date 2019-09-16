@@ -81,7 +81,7 @@ void selection_tool::perform_action()
 		Cnt nr = type == ST_POINT ? ref_pc().get_nr_points() : ref_pc().get_nr_components();
 		switch (mode) {
 		case SM_SINGLE:
-			for (i = 0; i < nr; ++i)
+			for (i = 0; i < (Idx)nr; ++i)
 				apply_action(i, i == select_index);
 			last_select_index = select_index;
 			break;
@@ -90,7 +90,7 @@ void selection_tool::perform_action()
 				apply_action(i, false);
 			for (; i <= select_range[1]; ++i)
 				apply_action(i, true);
-			for (; i < nr; ++i)
+			for (; i < (Idx)nr; ++i)
 				apply_action(i, false);
 			last_select_range = select_range;
 			break;
