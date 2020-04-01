@@ -13,6 +13,6 @@ addDependencies=["opengl","glu"];
 addSharedDefines=["PC_VIEW_EXPORTS"];
 addCommandLineArguments=[
 	'config:"'.INPUT_DIR.'/pc_view.def"',
-	"type(shader_config):shader_path='".INPUT_DIR.";".CGV_DIR."/libs/cgv_gl/glsl;".CGV_DIR."/libs/point_cloud/glsl'"
+	after("type(shader_config):shader_path='".INPUT_DIR.";".CGV_DIR."/libs/cgv_gl/glsl;".CGV_DIR."/libs/point_cloud/glsl'","cg_fltk")
 ];
 

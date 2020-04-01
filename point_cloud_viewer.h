@@ -6,7 +6,7 @@
 #include <cgv/gui/key_event.h>
 #include <cgv/gui/provider.h>
 #include <cgv/base/register.h>
-#include <libs/point_cloud/gl_point_cloud_drawable_base.h>
+#include <libs/point_cloud/gl_point_cloud_drawable.h>
 #include <libs/point_cloud/neighbor_graph.h>
 #include <libs/point_cloud/normal_estimator.h>
 
@@ -26,7 +26,7 @@ class CGV_API point_cloud_viewer :
 	public cgv::gui::event_handler,
 	public cgv::gui::provider,
 	public cgv::base::argument_handler,
-	public gl_point_cloud_drawable_base
+	public gl_point_cloud_drawable
 {
 protected:
 	std::vector<point_cloud_tool_ptr> tools;
@@ -36,6 +36,7 @@ protected:
 
 	std::string master_path;
 	std::string directory_name;
+	std::string file_name;
 	bool do_append;
 
 	float relative_distance_threshold;

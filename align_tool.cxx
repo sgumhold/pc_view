@@ -39,9 +39,9 @@ void align_tool::align()
 	KD.build(pc, target_components);
 	// correspondence search
 	for (auto ci : source_components) {
-		Idx pi_end = pc.component_point_range(ci).index_of_first_point + pc.component_point_range(ci).nr_points;
+		Idx pi_end = Idx(pc.component_point_range(ci).index_of_first_point + pc.component_point_range(ci).nr_points);
 		std::vector<const Pnt*> knn;
-		for (Idx pi = pc.component_point_range(ci).index_of_first_point; pi < pi_end; ++pi) {
+		for (Idx pi = Idx(pc.component_point_range(ci).index_of_first_point); pi < pi_end; ++pi) {
 			KD.find_closest_points(pc.transformed_pnt(pi), 1, knn);
 			// filter by normals
 		}

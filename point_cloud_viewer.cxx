@@ -77,9 +77,9 @@ std::string get_file_name(FileBase file_base, int file_idx)
 
 namespace cgv {
 	namespace reflect {
-reflection_traits<gl_point_cloud_drawable_base,RTK_SELF_REFLECT,false> get_reflection_traits(const gl_point_cloud_drawable_base&) 
+reflection_traits<gl_point_cloud_drawable_base,RTK_SELF_REFLECT,false> get_reflection_traits(const gl_point_cloud_drawable&) 
 {
-	return reflection_traits<gl_point_cloud_drawable_base,RTK_SELF_REFLECT,false>();
+	return reflection_traits<gl_point_cloud_drawable,RTK_SELF_REFLECT,false>();
 }
 	}
 }
@@ -118,12 +118,13 @@ point_cloud_viewer::point_cloud_viewer() : ne(pc, ng)
 	use_component_transformations = true;
 	color_mode_overwrite = CMO_NONE;
 
-	point_style.use_group_transformation = true;
-
-	point_selection_colors.push_back(Clr(0.5f, 0.5f, 0.5f));
-	point_selection_colors.push_back(Clr(1.0f, 1.0f, 0.5f));
-	point_selection_colors.push_back(Clr(0.0f, 0.0f, 1.0f));
-	point_selection_colors.push_back(Clr(1.0f, 0.0f, 0.0f));
+	surfel_style.use_group_transformation = true;
+	ClrComp a = float_to_color_component(0.5f);
+	ClrComp b = float_to_color_component(1.0f);
+	point_selection_colors.push_back(Clr(a, a, a));
+	point_selection_colors.push_back(Clr(b, b, a));
+	point_selection_colors.push_back(Clr(0, 0, b));
+	point_selection_colors.push_back(Clr(b, 0, 0));
 
 	selected_tool = -1;
 	add_tool(new align_tool(this), cgv::gui::shortcut(int('A'), cgv::gui::EM_CTRL));
@@ -196,10 +197,10 @@ void point_cloud_viewer::interact_callback(double t, double dt)
 
 bool point_cloud_viewer::init(cgv::render::context& ctx)
 {
-	if (!gl_point_cloud_drawable_base::init(ctx))
+	if (!gl_point_cloud_drawable::init(ctx))
 		return false;
 
-	ctx.disable_phong_shading();
+	//ctx.disable_phong_shading();
 	get_root()->set("bg_index", 4);
 
 	for (auto t:tools)
@@ -221,7 +222,7 @@ void point_cloud_viewer::init_frame(cgv::render::context& ctx)
 			}
 		}
 	}
-	gl_point_cloud_drawable_base::init_frame(ctx);
+	gl_point_cloud_drawable::init_frame(ctx);
 }
 
 void point_cloud_viewer::clear()
@@ -309,7 +310,7 @@ void point_cloud_viewer::draw(cgv::render::context& ctx)
 	if (interact_state != IS_DRAW_FULL_FRAME)
 		std::swap(show_point_step, interact_point_step);
 
-	gl_point_cloud_drawable_base::draw(ctx);
+	gl_point_cloud_drawable::draw(ctx);
 
 	if (interact_state != IS_DRAW_FULL_FRAME) {
 		std::swap(show_point_step, interact_point_step);
@@ -437,11 +438,11 @@ std::string point_cloud_viewer::get_type_name() const
 bool point_cloud_viewer::self_reflect(cgv::reflect::reflection_handler& srh)
 {
 	if (srh.reflect_member("do_append", do_append) &&
-		srh.reflect_member("data_path", data_path) &&
+		srh.reflect_member("master_path", master_path) &&
 		srh.reflect_member("file_name", file_name) &&
 		srh.reflect_member("directory_name", directory_name) &&
 		srh.reflect_member("interact_point_step", interact_point_step) &&
-		srh.reflect_member("point_style", point_style) &&
+		srh.reflect_member("surfel_style", surfel_style) &&
 		srh.reflect_member("normal_style", normal_style) &&
 		srh.reflect_member("box_style", box_style) &&
 		srh.reflect_member("box_wire_style", box_wire_style) &&

@@ -7,7 +7,7 @@ void image_based_normal_estimator::compute_normals_from_index_image()
 	if (!ref_pc().has_normals())
 		ref_pc().create_normals();
 
-	Idx cnt = ref_pc().has_components() ? ref_pc().get_nr_components() : 1;
+	Idx cnt = Idx(ref_pc().has_components() ? ref_pc().get_nr_components() : 1);
 	for (Idx i = 0; i < Idx(ref_pc().get_nr_components()); ++i) {
 		index_image img;
 		int ci = ref_pc().has_components() ? i : -1;
