@@ -21,7 +21,7 @@ void clip_tool::clip_points()
 {
 	ref_pc().clip(Box(ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * clip_box.get_min_pnt(), ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * clip_box.get_max_pnt()));
 	reset_clip_box();
-	viewer_ptr->on_nr_points_change_callback();
+	viewer_ptr->on_point_cloud_change_callback(PCC_POINTS_RESIZE);
 }
 
 bool clip_tool::self_reflect(cgv::reflect::reflection_handler& srh)
@@ -39,9 +39,10 @@ void clip_tool::draw(cgv::render::context& ctx)
 	viewer_ptr->draw_box(ctx, Box(ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * clip_box.get_min_pnt(), ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * clip_box.get_max_pnt()), clip_box_color);
 }
 
-void clip_tool::on_point_cloud_change_callback()
+void clip_tool::on_point_cloud_change_callback(PointCloudChangeEvent pcc_event)
 {
-	reset_clip_box();
+	if ( (pcc_event&PCC_POINTS_MASK) != 0)
+		reset_clip_box();
 }
 
 void clip_tool::create_gui()
@@ -49,5 +50,5 @@ void clip_tool::create_gui()
 	add_member_control(this, "show", show_clipping, "toggle");
 	connect_copy(add_button("clip to box")->click, cgv::signal::rebind(this, &clip_tool::clip_points));
 	add_gui("clip_box", clip_box, "", "order_by_coords=true;min_size=0.1;main_label='first';align_col=' ';align_row='%Y-=6\n%Y+=6';align_end='\n';gui_type='slider';options='min=0;max=1;w=60;ticks=true;step=0.001'");
-	add_gui("color", clip_box_color);
+	add_member_control(this, "color", clip_box_color);
 }

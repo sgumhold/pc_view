@@ -17,6 +17,7 @@ void image_based_normal_estimator::compute_normals_from_index_image()
 		int nr_isolated, nr_iterations, nr_left_over;
 		ref_pc().estimate_normals(img, float(dist_stats.get_min()) * ref_variable("relative_distance_threshold", 5.0f), ci, &nr_isolated, &nr_iterations, &nr_left_over);
 	}
+	viewer_ptr->on_point_cloud_change_callback(PCC_NORMALS);
 	post_redraw();
 }
 image_based_normal_estimator::image_based_normal_estimator(point_cloud_viewer_ptr pcv_ptr) : point_cloud_tool(pcv_ptr, "image_normal_estimator")

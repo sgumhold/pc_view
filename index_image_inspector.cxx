@@ -23,7 +23,8 @@ void index_image_inspector::draw(cgv::render::context& ctx)
 {
 	if (!show_image || !ref_pc().has_pixel_coordinates())
 		return;
-
+	if (image_type == IIT_NORMAL && !ref_pc().has_normals())
+		return;
 	int ci = -1;
 	if (ref_pc().has_components()) {
 		ci = image_component_index;
@@ -34,44 +35,44 @@ void index_image_inspector::draw(cgv::render::context& ctx)
 	index_image img;
 	ref_pc().compute_index_image(img, 1, ci);
 	std::vector<cgv::media::color<cgv::type::uint8_type, cgv::media::RGB, cgv::media::OPACITY> > clrs;
-	unsigned w = image_scale*img.get_width(), h = image_scale*img.get_height();
+	int w = image_scale*img.get_width(), h = image_scale*img.get_height();
 	std::vector<size_t> Ni;
 	cgv::utils::statistics dist_stats;
 	ref_pc().compute_image_neighbor_distance_statistic(img, dist_stats, ci);
 	float distance_threshold = float(dist_stats.get_min()) * ref_variable("relative_distance_threshold", 5.0f);
 	clrs.resize(w*h);
-	for (size_t j = 0; j < h; ++j) {
-		for (size_t i = 0; i < w; ++i) {
+	for (int j = 0; j < h; ++j) {
+		for (int i = 0; i < w; ++i) {
 			PixCrd pixcrd = PixCrd(i / image_scale, j / image_scale) + img.get_pixel_range().get_min_pnt();
 			Idx pi = img(pixcrd);
 			if (pi == -1)
-				clrs[j*w + i] = cgv::media::color<cgv::type::uint8_type, cgv::media::RGB, cgv::media::OPACITY>(byte_to_color_component(255), 0, 0, byte_to_color_component(255));
+				clrs[j*w + i] = cgv::media::color<cgv::type::uint8_type, cgv::media::RGB, cgv::media::OPACITY>(255, 0, 0, 255);
 			else {
 				switch (image_type) {
 				case IIT_X:
 				case IIT_Y:
 				case IIT_Z: {
 					ClrComp v = float_to_color_component((ref_pc().pnt(pi)(int(image_type)) - ref_pc().box(ci).get_min_pnt()(int(image_type))) / ref_pc().box(ci).get_extent()(int(image_type)));
-					clrs[j*w + i] = Rgba(v, v, v, 1);
+					clrs[j*w + i] = Rgba(v, v, v, float_to_color_component(1));
 				}
 							break;
 				case IIT_NORMAL: {
 					Dir d = 0.5f*ref_pc().nml(pi) + 0.5f;
-					clrs[j*w + i] = Rgba(float_to_color_component(d(0)), float_to_color_component(d(1)), float_to_color_component(d(2)), float_to_color_component(1.0f));
+					clrs[j*w + i] = Rgba(float_to_color_component(d(0)), float_to_color_component(d(1)), float_to_color_component(d(2)), float_to_color_component(1));
 				}
 								 break;
 				case IIT_COLOR:
 					clrs[j*w + i] = ref_pc().clr(pi);
 					break;
 				case IIT_POINT_INDEX: {
-					float v = float(pi - ref_pc().component_point_range(ci).index_of_first_point) / ref_pc().component_point_range(ci).nr_points;
-					clrs[j*w + i] = Rgba(v, v, v, 1);
+					ClrComp v = float_to_color_component(float(pi - ref_pc().component_point_range(ci).index_of_first_point) / ref_pc().component_point_range(ci).nr_points);
+					clrs[j*w + i] = Rgba(v, v, v, float_to_color_component(1));
 				}
 									  break;
 				case IIT_NEIGHBOR_COUNT: {
 					int cnt = ref_pc().collect_valid_image_neighbors(pi, img, Ni, distance_threshold);
-					ClrComp v = float_to_color_component(float(cnt) / 8);
-					clrs[j*w + i] = Rgba(v, v, v, 1);
+					ClrComp v = ClrComp(float(cnt) / 8);
+					clrs[j*w + i] = Rgba(v, v, v, float_to_color_component(1));
 				}
 										 break;
 
@@ -85,10 +86,12 @@ void index_image_inspector::draw(cgv::render::context& ctx)
 	ctx.pop_pixel_coords();
 }
 
-void index_image_inspector::on_nr_components_change_callback()
+void index_image_inspector::on_point_cloud_change_callback(PointCloudChangeEvent pcc_event)
 {
-	if (find_control(image_component_index))
-		find_control(image_component_index)->set("max", ref_pc().has_components() ? ref_pc().get_nr_components() - 1 : 0);
+	if (((pcc_event & PCC_POINTS_MASK) == PCC_NEW_POINT_CLOUD) || ((pcc_event & PCC_COMPONENTS_MASK) != 0) ) {
+		if (find_control(image_component_index))
+			find_control(image_component_index)->set("max", ref_pc().has_components() ? ref_pc().get_nr_components() - 1 : 0);
+	}
 }
 
 void index_image_inspector::create_gui()

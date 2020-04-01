@@ -14,7 +14,7 @@ protected:
 	void reset_clip_box();
 public:
 	clip_tool(point_cloud_viewer_ptr pcv_ptr);
-	void on_point_cloud_change_callback();
+	void on_point_cloud_change_callback(PointCloudChangeEvent pcc_event);
 	bool self_reflect(cgv::reflect::reflection_handler& srh);
 	void draw(cgv::render::context& ctx);
 	void create_gui();

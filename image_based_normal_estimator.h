@@ -10,6 +10,7 @@ protected:
 	void compute_normals_from_index_image();
 public:
 	image_based_normal_estimator(point_cloud_viewer_ptr pcv_ptr);
+	std::string get_icon_file_name() const { return "res://normal96.png"; }
 	void create_gui();
 };
 

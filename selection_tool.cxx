@@ -1,5 +1,7 @@
 #include "selection_tool.h"
 #include <cgv/gui/dialog.h>
+#include <cgv/gui/key_event.h>
+#include <cgv/gui/mouse_event.h>
 #include <cgv_gl/gl/gl.h>
 #include <cgv_reflect_types/media/axis_aligned_box.h>
 #include <cgv_reflect_types/media/color.h>
@@ -15,6 +17,9 @@ selection_tool::selection_tool(point_cloud_viewer_ptr pcv_ptr) : point_cloud_too
 	select_index = 0;
 	select_range = index_range(0,1);
 	show_box = true;
+	show_selection.resize(ref_point_selection_colors().size());
+	for (unsigned i=0; i<ref_point_selection_colors().size(); ++i)
+		(bool&)(show_selection[i]) = ref_point_selection_colors()[i][3] > 0.0f ? true : false;
 }
 
 void selection_tool::reset_selection_box()
@@ -78,7 +83,7 @@ void selection_tool::perform_action()
 		}
 	}
 	else {
-		Cnt nr = type == ST_POINT ? ref_pc().get_nr_points() : ref_pc().get_nr_components();
+		Cnt nr = Cnt(type == ST_POINT ? ref_pc().get_nr_points() : ref_pc().get_nr_components());
 		switch (mode) {
 		case SM_SINGLE:
 			for (i = 0; i < (Idx)nr; ++i)
@@ -115,6 +120,71 @@ void selection_tool::perform_action()
 	post_redraw();
 }
 
+bool selection_tool::handle(cgv::gui::event& e)
+{
+	if (e.get_kind() == cgv::gui::EID_KEY) {
+		cgv::gui::key_event& ke = static_cast<cgv::gui::key_event&>(e);
+		if (ke.get_action() == cgv::gui::KA_PRESS || ke.get_action() == cgv::gui::KA_REPEAT) {
+			switch (ke.get_key()) {
+			case 'C':
+				if (ke.get_modifiers() == 0) {
+					type = ST_COMPONENT;
+					on_set(&type);
+					return true;
+				}
+				break;
+			case 'P':
+				if (ke.get_modifiers() == 0) {
+					type = ST_POINT;
+					on_set(&type);
+					return true;
+				}
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+				if (ke.get_modifiers() == 0) {
+					current_selection = ke.get_key() - '0';
+					on_set(&current_selection);
+					return true;
+				}
+				if (ke.get_modifiers() == cgv::gui::EM_SHIFT) {
+					show_selection[ke.get_key() - '0'] = !show_selection[ke.get_key() - '0'];
+					on_set(&show_selection[ke.get_key() - '0']);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	if (e.get_kind() != cgv::gui::EID_MOUSE)
+		return false;
+	cgv::gui::mouse_event& me = (cgv::gui::mouse_event&) e;
+	if (me.get_action() == cgv::gui::MA_MOVE) {
+		if (me.get_modifiers() != cgv::gui::EM_SHIFT)
+			return false;
+		unsigned picked_index;
+		if (get_picked_point(me.get_x(), me.get_y(), picked_index)) {
+			if (ref_pc().has_normals()) {
+				Pnt eye = ref_view_ptr()->get_eye();
+				if (dot(eye - ref_pc().pnt(picked_index), ref_pc().nml(picked_index)) < 0)
+					return false;
+			}
+			ref_point_selection()[picked_index] = current_selection;
+			viewer_ptr->on_selection_change_callback(type);
+		}
+		return true;
+	}
+	return false;
+}
+
+void selection_tool::stream_help(std::ostream& os)
+{
+	os << "selection tool: 1-3 set index, S-0-3 toggle show" << std::endl;
+}
+
 bool selection_tool::self_reflect(cgv::reflect::reflection_handler& srh)
 {
 	return
@@ -122,6 +192,8 @@ bool selection_tool::self_reflect(cgv::reflect::reflection_handler& srh)
 		srh.reflect_member("type", (int&)type) &&
 		srh.reflect_member("action", (int&)action) &&
 		srh.reflect_member("current_selection", current_selection) &&
+		srh.reflect_member("auto_perform_action", auto_perform_action) &&
+		srh.reflect_member("auto_select_mode", auto_select_mode) &&
 		srh.reflect_member("select_index", select_index) &&
 		srh.reflect_member("select_range", select_range) &&
 		srh.reflect_member("show_box", show_box) &&
@@ -136,13 +208,44 @@ void selection_tool::draw(cgv::render::context& ctx)
 	viewer_ptr->draw_box(ctx, Box(ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * select_box.get_min_pnt(), ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * select_box.get_max_pnt()), box_color);
 }
 
-void selection_tool::on_point_cloud_change_callback()
+void selection_tool::on_point_cloud_change_callback(PointCloudChangeEvent pcc_event)
 {
-	reset_selection_box();
+	if ((pcc_event & PCC_POINTS_MASK) != 0)
+		reset_selection_box();
 }
 
 void selection_tool::on_set(void* member_ptr)
 {
+	if (ref_pc().has_components() && type == ST_COMPONENT) {
+		for (unsigned si = 0; si < ref_point_selection_colors().size(); ++si) {
+			if (member_ptr >= &ref_point_selection_colors()[si] && member_ptr < &ref_point_selection_colors()[si] + 1) {
+				bool new_show = ref_point_selection_colors()[si][3] > 0.0f ? true : false;
+				if (new_show != (bool&)(show_selection[si])) {
+					(bool&)(show_selection[si]) = new_show;
+					update_member(&show_selection[si]);
+				}
+				viewer_ptr->on_selection_change_callback(type);
+				break;
+			}
+			if (member_ptr == &show_selection[si]) {
+				if (show_selection[si]) {
+					if (ref_point_selection_colors()[si][3] == float_to_color_component(0.0)) {
+						ref_point_selection_colors()[si][3] = float_to_color_component(1.0);
+						viewer_ptr->on_selection_change_callback(type);
+						update_member(&ref_point_selection_colors()[si][3]);
+					}
+				}
+				else {
+					if (ref_point_selection_colors()[si][3] > float_to_color_component(0.0)) {
+						ref_point_selection_colors()[si][3] = float_to_color_component(0.0);
+						viewer_ptr->on_selection_change_callback(type);
+						update_member(&ref_point_selection_colors()[si][3]);
+					}
+				}
+				break;
+			}
+		}
+	}
 	if (member_ptr == &type) {
 		if (!ref_pc().has_components() && type == ST_COMPONENT) {
 			type = ST_POINT;
@@ -210,7 +313,7 @@ void selection_tool::create_components()
 			cis[i] = (i > 0 ? pc.add_component() : 0);
 			pc.component_point_range(cis[i]).index_of_first_point = (i == 0 ? 0 : cnts[i - 1]);
 			pc.component_point_range(cis[i]).nr_points = cnts[i];
-			pc.component_color(cis[i]) = ref_selection_color(i);
+			pc.component_color(cis[i]) = ref_point_selection_colors()[i];
 		}
 		if (i > 0)
 			cnts[i] += cnts[i - 1];
@@ -234,7 +337,7 @@ void selection_tool::create_components()
 void selection_tool::config_gui()
 {
 	if (find_control(select_index)) {
-		Cnt max_value = (type == ST_POINT ? ref_pc().get_nr_points() : ref_pc().get_nr_components()) - 1;
+		Cnt max_value = Cnt((type == ST_POINT ? ref_pc().get_nr_points() : ref_pc().get_nr_components()) - 1);
 		find_control(select_index)->set<Cnt>("max", max_value);
 		find_control(select_range[0])->set<Cnt>("max", max_value);
 		find_control(select_range[1])->set<Cnt>("max", max_value);
@@ -242,6 +345,11 @@ void selection_tool::config_gui()
 }
 void selection_tool::create_gui()
 {
+	for (unsigned i = 0; i < ref_point_selection_colors().size(); ++i) {
+		add_member_control(this, std::string("C") + cgv::utils::to_string(i), ref_point_selection_colors()[i], "", "w=150", " ");
+		add_member_control(this, "show", (bool&)show_selection[i], "toggle", "w=50");
+	}
+
 	add_member_control(this, "type", type, "dropdown", "enums='point,component'");
 	add_member_control(this, "action", action, "dropdown", "enums='set,add,del'");
 	connect_copy(add_button("select")->click, cgv::signal::rebind(this, &selection_tool::perform_action));
@@ -253,7 +361,7 @@ void selection_tool::create_gui()
 	add_gui("range", select_range, "ascending", "components='<>';min_size=1;options='min=0;ticks=true'");
 	add_member_control(this, "show", show_box, "toggle");
 	add_gui("select_box", select_box, "", "order_by_coords=true;min_size=0.1;main_label='first';align_col=' ';align_row='%Y-=6\n%Y+=6';align_end='\n';gui_type='slider';options='min=0;max=1;w=60;ticks=true;step=0.001'");
-	add_gui("color", box_color);
+	add_member_control(this, "color", box_color);
 	connect_copy(add_button("create components")->click, cgv::signal::rebind(this, &selection_tool::create_components));
 	config_gui();
 }

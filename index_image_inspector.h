@@ -25,7 +25,8 @@ protected:
 	cgv::math::fvec<Cnt, 2> component_range;
 public:
 	index_image_inspector(point_cloud_viewer_ptr pcv_ptr);
-	void on_nr_components_change_callback();
+	std::string get_icon_file_name() const { return "res://image96.png"; }
+	void on_point_cloud_change_callback(PointCloudChangeEvent pcc_event);
 	bool self_reflect(cgv::reflect::reflection_handler& srh);
 	void draw(cgv::render::context& ctx);
 	void create_gui();

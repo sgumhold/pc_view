@@ -4,6 +4,10 @@
 #include <cgv_gl/gl/gl.h>
 #include <cgv_reflect_types/media/axis_aligned_box.h>
 #include <cgv_reflect_types/media/color.h>
+#include <cgv/utils/file.h>
+#include <cgv/utils/dir.h>
+#include <cgv/utils/advanced_scan.h>
+#include <fstream>
 
 align_tool::align_tool(point_cloud_viewer_ptr pcv_ptr) : point_cloud_tool(pcv_ptr,"align")
 {
@@ -11,6 +15,11 @@ align_tool::align_tool(point_cloud_viewer_ptr pcv_ptr) : point_cloud_tool(pcv_pt
 	target_selection = 0;
 }
 
+void align_tool::center()
+{
+	ref_pc().translate(-ref_pc().box().get_center());
+	post_redraw();
+}
 
 void align_tool::align()
 {
@@ -57,6 +66,7 @@ bool align_tool::self_reflect(cgv::reflect::reflection_handler& srh)
 
 void align_tool::create_gui()
 {
+	connect_copy(add_button("center")->click, cgv::signal::rebind(this, &align_tool::center));
 	add_member_control(this, "source_selection", source_selection, "value_slider", "min=0;max=3");
 	add_member_control(this, "target_selection", target_selection, "value_slider", "min=0;max=3");
 	connect_copy(add_button("align")->click, cgv::signal::rebind(this, &align_tool::align));
