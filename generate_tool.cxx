@@ -59,7 +59,7 @@ void generate_tool::generate_points()
 				p = vec3(x, y, f);
 				n = vec3(x / g, y / g, 1);
 			}
-			Idx pi = pc.add_point(extent*p);
+			Idx pi = Idx(pc.add_point(extent*p));
 			pc.nml(pi) = normalize(n/extent);
 		}
 	}
