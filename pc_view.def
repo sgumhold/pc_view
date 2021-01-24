@@ -1,0 +1,12 @@
+show all
+
+name(point_cloud_viewer):data_path="d:/data/points/bpc"
+name(point_cloud_viewer):file_name="d:/data/points/bpc/goldenerreiter_nml.bpc"
+name(point_cloud_viewer):show_box=false
+name(point_cloud_viewer):surfel_style.point_size=1.0
+name(point_cloud_viewer):surfel_style.blend_points=false
+name(point_cloud_viewer):surfel_style.blend_width_in_pixel=0.0
+name(point_cloud_viewer):surfel_style.halo_color_strength=1.0
+name(point_cloud_viewer):surfel_style.percentual_halo_width=0.0
+name(point_cloud_viewer):surfel_style.surface_color="1.0 0.8 0.0"
+name(point_cloud_viewer):sort_points=false

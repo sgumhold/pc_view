@@ -26,7 +26,7 @@
 #define FILE_SAVE_TITLE "Save Point Cloud"
 #define FILE_OPEN_TITLE "Open Point Cloud"
 #define FILE_APPEND_TITLE "Append Point Cloud"
-#define FILE_OPEN_FILTER "Point Clouds (apc,bpc):*.apc;*.bpc|Mesh Files (obj,ply,pct):*.obj;*.ply;*.pct|All Files:*.*"
+#define FILE_OPEN_FILTER "Point Clouds (apc,bpc,pct,txt):*.apc;*.bpc;*.pct;*.txt|Mesh Files (obj,ply):*.obj;*.ply|All Files:*.*"
 #define TRANSFORMATION_FILE_OPEN_TITLE "Open Transformations"
 #define TRANSFORMATION_FILE_OPEN_FILTER "Alignment files (txt,aln):*.txt;*.aln;*.som|All Files:*.*"
 
@@ -195,7 +195,7 @@ void point_cloud_viewer::draw_graph(cgv::render::context& ctx)
 
 	glDisable(GL_LIGHTING);
 	glColor3f(0.5f, 0.5f, 0.5f);
-	glLineWidth(normal_style.line_width);
+	glLineWidth(1.0f);
 	glBegin(GL_LINES);
 	for (unsigned int vi = 0; vi<ng.size(); ++vi) {
 		const std::vector<Idx> &Ni = ng[vi];
@@ -436,19 +436,19 @@ void point_cloud_viewer::draw(cgv::render::context& ctx)
 bool point_cloud_viewer::save(const std::string& fn)
 {
 	if (!write(fn)) {
-		cgv::gui::message(std::string("could not write ")+fn);
+		cgv::gui::message(last_error);
 		return false;
 	}
 	return true;
 }
-
 bool point_cloud_viewer::open(const std::string& fn)
 {
-	if (!read(fn)) {
-		cgv::gui::message(std::string("could not read ") + fn);
+	std::string file_path = fn;
+	if (!read(file_path, &data_path)) {
+		cgv::gui::message(last_error);
 		return false;
 	}
-	file_name = fn;
+	file_name = file_path;
 	update_member(&file_name);
 	on_point_cloud_change_callback(PCC_NEW_POINT_CLOUD);
 	return true;
@@ -561,10 +561,11 @@ void point_cloud_viewer::configure_subsample_controls()
 }
 
 
-bool point_cloud_viewer::open_and_append(const std::string& fn)
+bool point_cloud_viewer::open_and_append(const std::string& _file_name)
 {
-	if (!append(fn)) {
-		cgv::gui::message(std::string("could not append ")+fn);
+	std::string fn = _file_name;
+	if (!append(fn, true, &data_path)) {
+		cgv::gui::message(last_error);
 		return false;
 	}
 	on_point_cloud_change_callback(PointCloudChangeEvent(PCC_POINTS_RESIZE + PCC_COMPONENTS_RESIZE));
@@ -595,6 +596,7 @@ bool point_cloud_viewer::self_reflect(cgv::reflect::reflection_handler& srh)
 		srh.reflect_member("show_nmls", show_nmls) &&
 		srh.reflect_member("show_boxes", show_boxes) &&
 		srh.reflect_member("show_box", show_box) &&
+		srh.reflect_member("sort_points", sort_points) &&
 		srh.reflect_member("show_neighbor_graph", show_neighbor_graph) &&
 		srh.reflect_member("k", k) &&
 		srh.reflect_member("do_symmetrize", do_symmetrize) &&
@@ -677,8 +679,6 @@ bool point_cloud_viewer::open_directory(const std::string& dn)
 	update_member(&use_component_colors);
 	return true;
 }
-
-
 void point_cloud_viewer::on_set(void* member_ptr)
 {
 	if (member_ptr == &color_mode_overwrite) {
