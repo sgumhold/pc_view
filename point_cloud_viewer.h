@@ -164,6 +164,7 @@ protected:
 	friend class point_cloud_tool;
 public:
 	point_cloud_viewer();
+	void on_register();
 	void on_point_cloud_change_callback(PointCloudChangeEvent pcc_event);
 	void on_selection_change_callback(SelectType type);
 	void on_tool_change_callback(unsigned prev_tool_index);

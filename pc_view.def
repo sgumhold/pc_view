@@ -1,7 +1,7 @@
 show all
 
 name(point_cloud_viewer):data_path="d:/data/points/bpc"
-name(point_cloud_viewer):file_name="d:/data/points/bpc/goldenerreiter_nml.bpc"
+//name(point_cloud_viewer):file_name="d:/data/points/bpc/goldenerreiter_nml.bpc"
 name(point_cloud_viewer):show_box=false
 name(point_cloud_viewer):surfel_style.point_size=1.0
 name(point_cloud_viewer):surfel_style.blend_points=false

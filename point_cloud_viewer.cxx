@@ -139,7 +139,6 @@ point_cloud_viewer::point_cloud_viewer() : ne(pc, ng)
 	interact_state = IS_INTERMEDIATE_FRAME;
 
 	cgv::signal::connect(interact_trigger.shoot, this, &point_cloud_viewer::interact_callback);
-	interact_trigger.schedule_recuring(interact_delay);
 
 	show_neighbor_graph = false;
 	k = 30;
@@ -234,7 +233,11 @@ void point_cloud_viewer::interact_callback(double t, double dt)
 		interact_state = IS_DRAW_FULL_FRAME;
 		post_redraw();
 	}
+}
 
+void point_cloud_viewer::on_register()
+{
+	interact_trigger.schedule_recuring(interact_delay);
 }
 
 bool point_cloud_viewer::init(cgv::render::context& ctx)
@@ -242,6 +245,7 @@ bool point_cloud_viewer::init(cgv::render::context& ctx)
 	if (!gl_point_cloud_drawable::init(ctx))
 		return false;
 
+	
 	get_root()->set("bg_index", 4);
 
 	for (auto t:tools)
