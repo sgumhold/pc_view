@@ -174,6 +174,7 @@ public:
 	bool init(cgv::render::context& ctx);
 	void init_frame(cgv::render::context& ctx);
 	void draw(cgv::render::context& ctx);
+	void finish_draw(cgv::render::context& ctx);
 	bool handle(cgv::gui::event& e);
 	void handle_args(std::vector<std::string>& args);
 	void stream_help(std::ostream& os);

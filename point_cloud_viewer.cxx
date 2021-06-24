@@ -16,6 +16,7 @@
 #include <libs/cg_gamepad/gamepad_server.h>
 
 #include "align_tool.h"
+#include "transform_tool.h"
 #include "clip_tool.h"
 #include "color_tool.h"
 #include "generate_tool.h"
@@ -158,6 +159,7 @@ point_cloud_viewer::point_cloud_viewer() : ne(pc, ng)
 	last_tool_index = -1;
 	selected_tool = -1;
 	add_tool(new align_tool(this), cgv::gui::shortcut(int('A'), cgv::gui::EM_CTRL));
+	add_tool(new transform_tool(this), cgv::gui::shortcut(int('T'), cgv::gui::EM_CTRL));
 	add_tool(new selection_tool(this), cgv::gui::shortcut(int('S'), cgv::gui::EM_CTRL));
 	add_tool(new clip_tool(this), cgv::gui::shortcut(int('X'), cgv::gui::EM_CTRL));
 	add_tool(new generate_tool(this), cgv::gui::shortcut(int('G'), cgv::gui::EM_CTRL));
@@ -408,6 +410,14 @@ void point_cloud_viewer::draw_gui(cgv::render::context& ctx)
 	ctx.pop_pixel_coords();
 }
 
+void point_cloud_viewer::finish_draw(cgv::render::context& ctx)
+{
+	gl_point_cloud_drawable::finish_draw(ctx);
+
+	if (selected_tool != -1)
+		tools[selected_tool]->finish_draw(ctx);
+}
+
 void point_cloud_viewer::draw(cgv::render::context& ctx)
 {
 	draw_gui(ctx);
@@ -421,6 +431,9 @@ void point_cloud_viewer::draw(cgv::render::context& ctx)
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 
+	if (selected_tool != -1)
+		tools[selected_tool]->draw(ctx);
+
 	if (interact_state != IS_DRAW_FULL_FRAME)
 		std::swap(show_point_step, interact_point_step);
 
@@ -432,9 +445,6 @@ void point_cloud_viewer::draw(cgv::render::context& ctx)
 	}
 	else
 		interact_state = IS_FULL_FRAME;
-
-	if (selected_tool != -1)
-		tools[selected_tool]->draw(ctx);
 }
 
 bool point_cloud_viewer::save(const std::string& fn)
@@ -525,9 +535,12 @@ void point_cloud_viewer::on_point_cloud_change_callback(PointCloudChangeEvent pc
 		update_member(&nr_draw_calls);
 
 		configure_subsample_controls();
-
 	}
-
+	// for new point clouds, estimate points size
+	if ((pcc_event & PCC_NEW_POINT_CLOUD) != 0) {
+		surfel_style.point_size = sqrt(pow(pc.box().get_extent().length(), 2.0f) / pc.get_nr_points());
+		update_member(&surfel_style.point_size);
+	}
 	if ( (pcc_event & PCC_COMPONENTS_MASK) != 0) {
 		component_selection.resize(pc.get_nr_components());
 		component_selection_colors.resize(pc.get_nr_components());
@@ -1138,7 +1151,7 @@ void point_cloud_viewer::create_gui()
 			end_tree_node(*tools[selected_tool]);
 		}
 	}
-	bool show = begin_tree_node("points", show_points, false, "level=3;w=100;align=' '");
+	bool show = begin_tree_node("points", show_points, false, "level=3;w=100;transform=' '");
 	add_member_control(this, "show", show_points, "toggle", "w=50");
 	if (show) {
 		align("\a");
@@ -1164,7 +1177,7 @@ void point_cloud_viewer::create_gui()
 		add_gui("surfel_style", surfel_style);
 		end_tree_node(show_points);
 	}
-	show = begin_tree_node("components", pc.components, false, "level=3;w=100;align=' '");
+	show = begin_tree_node("components", pc.components, false, "level=3;w=100;transform=' '");
 	add_member_control(this, "show", surfel_style.use_group_color, "toggle", "w=50");
 	if (show) {
 		align("\a");
@@ -1193,7 +1206,7 @@ void point_cloud_viewer::create_gui()
 		align("\b");
 		end_tree_node(pc.components);
 	}
-	show = begin_tree_node("neighbor graph", show_neighbor_graph, false, "level=3;w=150;align=' '");
+	show = begin_tree_node("neighbor graph", show_neighbor_graph, false, "level=3;w=150;transform=' '");
 	add_member_control(this, "show", show_neighbor_graph, "toggle", "w=50");
 	if (show) {
 		add_member_control(this, "k", k, "value_slider", "min=3;max=50;log=true;ticks=true");
@@ -1202,7 +1215,7 @@ void point_cloud_viewer::create_gui()
 		end_tree_node(show_neighbor_graph);
 	}
 
-	show = begin_tree_node("normals", show_nmls, false, "level=3;w=100;align=' '");
+	show = begin_tree_node("normals", show_nmls, false, "level=3;w=100;transform=' '");
 	add_member_control(this, "show", show_nmls, "toggle", "w=50");
 	if (show) {
 		cgv::signal::connect_copy(add_button("toggle orientation")->click, cgv::signal::rebind(this, &point_cloud_viewer::toggle_normal_orientations));
@@ -1226,7 +1239,7 @@ void point_cloud_viewer::create_gui()
 		end_tree_node(show_surfrec);
 	}
 	*/
-	show = begin_tree_node("box", show_box, false, "level=3;w=100;align=' '");
+	show = begin_tree_node("box", show_box, false, "level=3;w=100;transform=' '");
 	add_member_control(this, "show", show_box, "toggle", "w=50");
 	if (show) {
 		add_member_control(this, "show", show_boxes, "toggle", "w=50");
