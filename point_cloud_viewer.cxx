@@ -1151,7 +1151,7 @@ void point_cloud_viewer::create_gui()
 			end_tree_node(*tools[selected_tool]);
 		}
 	}
-	bool show = begin_tree_node("points", show_points, false, "level=3;w=100;transform=' '");
+	bool show = begin_tree_node("points", show_points, false, "level=3;w=100;align=' '");
 	add_member_control(this, "show", show_points, "toggle", "w=50");
 	if (show) {
 		align("\a");
@@ -1172,12 +1172,12 @@ void point_cloud_viewer::create_gui()
 			align("\b");
 			end_tree_node(show_point_step);
 		}
-		align("\b");
 		add_member_control(this, "sort_points", sort_points, "check");
 		add_gui("surfel_style", surfel_style);
+		align("\b");
 		end_tree_node(show_points);
 	}
-	show = begin_tree_node("components", pc.components, false, "level=3;w=100;transform=' '");
+	show = begin_tree_node("components", pc.components, false, "level=3;w=100;align=' '");
 	add_member_control(this, "show", surfel_style.use_group_color, "toggle", "w=50");
 	if (show) {
 		align("\a");
@@ -1206,7 +1206,7 @@ void point_cloud_viewer::create_gui()
 		align("\b");
 		end_tree_node(pc.components);
 	}
-	show = begin_tree_node("neighbor graph", show_neighbor_graph, false, "level=3;w=150;transform=' '");
+	show = begin_tree_node("neighbor graph", show_neighbor_graph, false, "level=3;w=150;align=' '");
 	add_member_control(this, "show", show_neighbor_graph, "toggle", "w=50");
 	if (show) {
 		add_member_control(this, "k", k, "value_slider", "min=3;max=50;log=true;ticks=true");
@@ -1215,7 +1215,7 @@ void point_cloud_viewer::create_gui()
 		end_tree_node(show_neighbor_graph);
 	}
 
-	show = begin_tree_node("normals", show_nmls, false, "level=3;w=100;transform=' '");
+	show = begin_tree_node("normals", show_nmls, false, "level=3;w=100;align=' '");
 	add_member_control(this, "show", show_nmls, "toggle", "w=50");
 	if (show) {
 		cgv::signal::connect_copy(add_button("toggle orientation")->click, cgv::signal::rebind(this, &point_cloud_viewer::toggle_normal_orientations));
@@ -1239,7 +1239,7 @@ void point_cloud_viewer::create_gui()
 		end_tree_node(show_surfrec);
 	}
 	*/
-	show = begin_tree_node("box", show_box, false, "level=3;w=100;transform=' '");
+	show = begin_tree_node("box", show_box, false, "level=3;w=100;align=' '");
 	add_member_control(this, "show", show_box, "toggle", "w=50");
 	if (show) {
 		add_member_control(this, "show", show_boxes, "toggle", "w=50");
