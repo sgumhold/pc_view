@@ -9,6 +9,7 @@
 #include <cgv/gui/dialog.h>
 #include <cgv/gui/trigger.h>
 #include <cgv/gui/mouse_event.h>
+#include <cgv/gui/application.h>
 #include <cgv/gui/file_dialog.h>
 #include <cgv/reflect/reflect_extern.h>
 #include <cgv_gl/gl/gl.h>
@@ -240,6 +241,7 @@ void point_cloud_viewer::interact_callback(double t, double dt)
 void point_cloud_viewer::on_register()
 {
 	interact_trigger.schedule_recuring(interact_delay);
+	cgv::gui::application::get_window(0)->set("title", "PointCloudView");
 }
 
 bool point_cloud_viewer::init(cgv::render::context& ctx)
