@@ -8,12 +8,12 @@ class CGV_API transform_tool : public point_cloud_tool
 {
 public:
 	float scale;
-	vec3 translate;
-	vec3 axis;
+	cgv::vec3 translate;
+	cgv::vec3 axis;
 	float angle;
 	float translation_scale;
 	void transform();
-	mat4 get_transformation() const;
+	cgv::mat4 get_transformation() const;
 public:
 	transform_tool(point_cloud_viewer_ptr pcv_ptr);
 	std::string get_icon_file_name() const { return "res://transform96.png"; }

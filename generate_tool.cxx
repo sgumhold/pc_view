@@ -3,6 +3,8 @@
 #include <cgv_gl/gl/gl.h>
 #include <cgv_reflect_types/media/color.h>
 
+using namespace cgv;
+
 generate_tool::generate_tool(point_cloud_viewer_ptr pcv_ptr) :
 	point_cloud_tool(pcv_ptr, "generate"), extent(1, 1, 1)
 {

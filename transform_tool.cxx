@@ -11,6 +11,8 @@
 #include <cgv/utils/advanced_scan.h>
 #include <fstream>
 
+using namespace cgv;
+
 transform_tool::transform_tool(point_cloud_viewer_ptr pcv_ptr) : point_cloud_tool(pcv_ptr,"transform")
 {
 	translation_scale = 1.0f;
@@ -27,7 +29,7 @@ void transform_tool::reset()
 	post_redraw();
 }
 
-transform_tool::mat4 transform_tool::get_transformation() const
+mat4 transform_tool::get_transformation() const
 {
 	return
 		cgv::math::translate4<float>(translate) *

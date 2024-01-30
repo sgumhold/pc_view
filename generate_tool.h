@@ -22,7 +22,7 @@ protected:
 	Idx nr_rows;
 	bool one_component_per_row;
 	bool append;
-	vec3 extent;
+	cgv::vec3 extent;
 	float R;
 	void generate_points();
 public:

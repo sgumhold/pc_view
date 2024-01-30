@@ -32,6 +32,8 @@
 #define TRANSFORMATION_FILE_OPEN_TITLE "Open Transformations"
 #define TRANSFORMATION_FILE_OPEN_FILTER "Alignment files (txt,aln):*.txt;*.aln;*.som|All Files:*.*"
 
+using namespace cgv;
+
 static bool as_matrix = false;
 
 enum FileBase
