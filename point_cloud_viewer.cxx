@@ -19,6 +19,7 @@
 #include "align_tool.h"
 #include "transform_tool.h"
 #include "clip_tool.h"
+#include "plane_tool.h"
 #include "color_tool.h"
 #include "generate_tool.h"
 #include "selection_tool.h"
@@ -164,6 +165,7 @@ point_cloud_viewer::point_cloud_viewer() : ne(pc, ng)
 	add_tool(new align_tool(this), cgv::gui::shortcut(int('A'), cgv::gui::EM_CTRL));
 	add_tool(new transform_tool(this), cgv::gui::shortcut(int('T'), cgv::gui::EM_CTRL));
 	add_tool(new selection_tool(this), cgv::gui::shortcut(int('S'), cgv::gui::EM_CTRL));
+	add_tool(new plane_tool(this), cgv::gui::shortcut(int('P'), cgv::gui::EM_CTRL));
 	add_tool(new clip_tool(this), cgv::gui::shortcut(int('X'), cgv::gui::EM_CTRL));
 	add_tool(new generate_tool(this), cgv::gui::shortcut(int('G'), cgv::gui::EM_CTRL));
 	add_tool(new color_tool(this), cgv::gui::shortcut(int('C'), cgv::gui::EM_CTRL));
