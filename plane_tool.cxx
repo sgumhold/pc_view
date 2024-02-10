@@ -3,6 +3,7 @@
 #include <cgv_reflect_types/media/axis_aligned_box.h>
 #include <cgv_reflect_types/media/color.h>
 #include <random>
+#include <numeric>
 
 plane_tool::plane_tool(point_cloud_viewer_ptr pcv_ptr) : point_cloud_tool(pcv_ptr,"plane")
 {
@@ -25,12 +26,12 @@ void plane_tool::ensure_colors()
 void plane_tool::compute_planes()
 {
 	reset_planes();
-	auto& pc = ref_pc();
 	std::default_random_engine RE;
+	auto& pc = ref_pc();
 	float eps = inlier_distance*pc.box().get_extent().length();
-	std::vector<unsigned> I(pc.get_nr_points(), 0);
-	for (unsigned i = 0; i < pc.get_nr_points(); ++i)
-		I[i] = i;
+	std::vector<unsigned> I(pc.get_nr_points());
+	std::iota(I.begin(), I.end(), 0);
+
 	std::vector<unsigned> end_idx;
 	unsigned nr_used_points = 0;
 	while (end_idx.size() < max_nr_planes) {
@@ -61,7 +62,7 @@ void plane_tool::compute_planes()
 
 				nml = cross(p1 - p0, p2 - p0);
 				len = nml.length();
-			} while (len < eps);
+			} while (len < 1e-6f);
 			// count number of inliers
 			nml /= len;
 			p0 = 0.33333333333f * (p0 + p1 + p2);
@@ -136,6 +137,33 @@ void plane_tool::init_colors()
 	}
 }
 
+void plane_tool::colorize_node(octree_base::node_handle nh, const cgv::rgb& color)
+{
+	auto& pc = ref_pc();
+	octree_base::point_index_type nr_points = point_octree_ptr->node_nr_points(nh);
+	octree_base::point_index_type first_point = point_octree_ptr->node_first_point(nh);
+	for (unsigned i = 0; i < nr_points; ++i)
+		pc.clr(point_octree_ptr->point_indices[first_point + i]) = color;
+}
+
+void plane_tool::colorize_by_node()
+{
+	ensure_colors();
+	auto& pc = ref_pc();
+	for (size_t pi = 0; pi < pc.get_nr_points(); ++pi)
+		pc.clr(pi) = default_point_color;
+	if (point_octree_ptr->node_is_leaf(node_iter))
+		colorize_node(node_iter, cgv::rgb(0.5f, 0.5f, 0.0f));
+	else {
+		for (unsigned ci = 0; ci < 8; ++ci) {
+			octree_base::node_handle nh = point_octree_ptr->copy_node_handle(node_iter);
+			if (point_octree_ptr->node_decent(nh, ci)) {
+				colorize_node(nh, cgv::rgb(((ci & 1) == 0) ? 0.0f : 1.0f, ((ci & 2) == 0) ? 0.0f : 1.0f, ((ci & 4) == 0) ? 0.0f : 1.0f));
+			}
+		}
+	}
+}
+
 bool plane_tool::self_reflect(cgv::reflect::reflection_handler& srh)
 {
 	return
@@ -174,11 +202,56 @@ void plane_tool::draw(cgv::render::context& ctx)
 	//viewer_ptr->draw_box(ctx, Box(ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * clip_box.get_min_pnt(), ref_pc().box().get_min_pnt() + ref_pc().box().get_extent() * clip_box.get_max_pnt()), clip_box_color);
 }
 
+void plane_tool::build_octree()
+{
+	if (point_octree_ptr) {
+		point_octree_ptr->release_node_handle(node_iter);
+		delete point_octree_ptr;
+	}
+	point_octree_ptr = new simple_point_octree;
+	point_octree_ptr->construct(&ref_pc().pnt(0), ref_pc().get_nr_points(), max_nr_points_per_leaf, ensure_isotropic);
+	node_iter = point_octree_ptr->create_root_node_handle();
+	node_index = point_octree_ptr->node_index(node_iter);
+	update_member(&node_index);
+	colorize_by_node();
+	post_redraw();
+}
+
+void plane_tool::to_root()
+{
+	if (point_octree_ptr) {
+		point_octree_ptr->release_node_handle(node_iter);
+		node_iter = point_octree_ptr->create_root_node_handle();
+		node_index = point_octree_ptr->node_index(node_iter);
+		update_member(&node_index);
+		colorize_by_node();
+		post_redraw();
+	}
+}
+void plane_tool::to_child(unsigned ci)
+{
+	if (point_octree_ptr) {
+		if (!point_octree_ptr->node_is_leaf(node_iter)) {
+			point_octree_ptr->node_decent(node_iter, ci);
+			node_index = point_octree_ptr->node_index(node_iter);
+			update_member(&node_index);
+			colorize_by_node();
+			post_redraw();
+		}
+	}
+}
+
 void plane_tool::on_point_cloud_change_callback(PointCloudChangeEvent pcc_event)
 {
-	if ( (pcc_event&PCC_POINTS_MASK) != 0)
+	if ((pcc_event & PCC_POINTS_MASK) != 0) {
 		if (colorize_points)
 			init_colors();
+		if (point_octree_ptr) {
+			point_octree_ptr->release_node_handle(node_iter);
+			delete point_octree_ptr;
+			point_octree_ptr = 0;
+		}
+	}
 }
 
 void plane_tool::create_gui()
@@ -194,6 +267,24 @@ void plane_tool::create_gui()
 	connect_copy(add_button("Find Planes")->click, cgv::signal::rebind(this, &plane_tool::compute_planes));
 	connect_copy(add_button("Reset Planes")->click, cgv::signal::rebind(this, &plane_tool::reset_planes));
 	add_member_control(this, "Default Point Color", default_point_color);
+	if (begin_tree_node("Point Octree", point_octree_ptr)) {
+		align("\a");
+		add_member_control(this, "Max Nr Points Per Leaf", max_nr_points_per_leaf, "value_slider", "min=1;max=10000;log=true;ticks=true");
+		add_member_control(this, "Ensure Isotropic", ensure_isotropic, "toggle");
+		add_view("Node Index", node_index);
+		connect_copy(add_button("Build Octree")->click, cgv::signal::rebind(this, &plane_tool::build_octree));
+		connect_copy(add_button("Navigate To Root")->click, cgv::signal::rebind(this, &plane_tool::to_root));
+		connect_copy(add_button("C0")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(0)));
+		connect_copy(add_button("C1")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(1)));
+		connect_copy(add_button("C2")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(2)));
+		connect_copy(add_button("C3")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(3)));
+		connect_copy(add_button("C4")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(4)));
+		connect_copy(add_button("C5")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(5)));
+		connect_copy(add_button("C6")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(6)));
+		connect_copy(add_button("C7")->click, cgv::signal::rebind(this, &plane_tool::to_child, cgv::signal::_c<unsigned>(7)));
+		align("\b");
+		end_tree_node(point_octree_ptr);
+	}
 	if (begin_tree_node("Sphere Style", srs)) {
 		align("\a");
 		add_gui("Style", srs);

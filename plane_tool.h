@@ -4,12 +4,21 @@
 #include <cgv_gl/arrow_renderer.h>
 #include <cgv_gl/sphere_renderer.h>
 #include "point_cloud_tool.h"
+#include "octrees.h"
 
 #include "lib_begin.h"
 
 class CGV_API plane_tool : public point_cloud_tool
 {
 protected:
+	octree_base* point_octree_ptr = 0;
+	octree_base::node_handle node_iter = 0;
+	octree_base::node_index_type node_index = 0;
+	unsigned max_nr_points_per_leaf = 50;
+	bool ensure_isotropic = true;
+	void build_octree();
+	void to_root();
+	void to_child(unsigned ci);
 	std::vector<cgv::vec3> plane_centers;
 	std::vector<cgv::vec3> plane_normals;
 	std::vector<cgv::rgba> plane_colors;
@@ -28,6 +37,8 @@ protected:
 	void compute_planes();
 	void ensure_colors();
 	void init_colors();
+	void colorize_node(octree_base::node_handle nh, const cgv::rgb& color);
+	void colorize_by_node();
 	void reset_planes();
 public:
 	plane_tool(point_cloud_viewer_ptr pcv_ptr);

@@ -408,7 +408,7 @@ void point_cloud_viewer::draw_gui(cgv::render::context& ctx)
 	unsigned x = 2;
 	for (unsigned ti = 0; ti < tools.size(); ++ti) {
 		if (tool_icons[ti]) {
-			glRasterPos2i(x, ti == selected_tool ? h-12 : h - 2);
+			glRasterPos2i(x,  ti == selected_tool ? +12 : 2);
 			glDrawPixels(tool_icons[ti]->get_width(), tool_icons[ti]->get_height(), GL_RGB, GL_UNSIGNED_BYTE, tool_icons[ti]->get_ptr<char>());
 			x += tool_icons[ti]->get_width() + 2;
 		}
